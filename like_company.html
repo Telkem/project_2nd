@@ -86,13 +86,55 @@
         }
         .radius-selector {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            margin-top: 15px;
+            width: 100%;
         }
-        .radius-selector span {
+        .radius-selector-labels {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        .radius-selector-labels span {
             font-size: 14px;
             color: #777;
+        }
+        .radius-selector-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #radiusRange {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 8px;
+            background: #ffe8e8;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        #radiusRange:hover {
+            opacity: 1;
+        }
+        #radiusRange::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #ffc0cb;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        #currentRadius {
+            font-size: 14px;
+            color: #333;
+            font-weight: bold;
+            min-width: 40px;
+            text-align: right;
         }
         .map-container {
             width: 100%;
@@ -158,11 +200,17 @@
         <div class="radius-section">
             <h2>반경 선택</h2>
             <div class="radius-selector">
-                <span>최소</span>
-                <span>1km</span>
-                <span>3km</span>
-                <span>5km</span>
-                <span>최대</span>
+                <div class="radius-selector-labels">
+                    <span>최소</span>
+                    <span>1km</span>
+                    <span>3km</span>
+                    <span>5km</span>
+                    <span>최대</span>
+                </div>
+                <div class="radius-selector-container">
+                    <input type="range" id="radiusRange" min="0" max="10000" step="100" value="3000">
+                    <span id="currentRadius">3km</span>
+                </div>
             </div>
         </div>
         
@@ -187,6 +235,34 @@
 
         var marker = null;
         var circle = null;
+        var centerPos = null;
+
+        var radiusRange = document.getElementById('radiusRange');
+        var currentRadiusSpan = document.getElementById('currentRadius');
+
+        // 슬라이더 값에 따라 반경 표시
+        radiusRange.addEventListener('input', function() {
+            var radiusKm = this.value / 1000;
+            currentRadiusSpan.textContent = radiusKm + 'km';
+            
+            if (centerPos) {
+                if (circle) {
+                    circle.setMap(null);
+                }
+
+                circle = new kakao.maps.Circle({
+                    center: centerPos,
+                    radius: this.value,
+                    strokeWeight: 2,
+                    strokeColor: '#FF00FF',
+                    strokeOpacity: 0.8,
+                    strokeStyle: 'solid',
+                    fillColor: '#FF00FF',
+                    fillOpacity: 0.3
+                });
+                circle.setMap(map);
+            }
+        });
 
         document.getElementById('searchBtn').addEventListener('click', function() {
             var address = document.getElementById('addressInput').value;
@@ -198,7 +274,7 @@
 
             geocoder.addressSearch(address, function(result, status) {
                 if (status === kakao.maps.services.Status.OK) {
-                    var coords = new kakao.maps.LatLng(result[0].y, result[0].x);
+                    centerPos = new kakao.maps.LatLng(result[0].y, result[0].x);
 
                     if (marker) {
                         marker.setMap(null);
@@ -209,12 +285,14 @@
 
                     marker = new kakao.maps.Marker({
                         map: map,
-                        position: coords
+                        position: centerPos
                     });
 
+                    var initialRadius = radiusRange.value;
+
                     circle = new kakao.maps.Circle({
-                        center: coords,
-                        radius: 3000, // 3km 반경 (미터 단위)
+                        center: centerPos,
+                        radius: initialRadius,
                         strokeWeight: 2,
                         strokeColor: '#FF00FF',
                         strokeOpacity: 0.8,
@@ -224,8 +302,8 @@
                     });
 
                     circle.setMap(map);
-                    map.setCenter(coords);
-                    map.setLevel(5); // 주소에 맞춰 적절한 확대 레벨로 조정
+                    map.setCenter(centerPos);
+                    map.setLevel(5);
                 } else {
                     alert('주소 검색 결과가 없습니다.');
                 }
