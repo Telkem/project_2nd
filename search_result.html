@@ -162,6 +162,15 @@
         <p>매물정보: 월세 / {{items[3].rent | money}} / 보증금 {{ items[3].deposit | money }}</p>
         {% endif %}
       </div>
+
+      <div class="card"  onclick="location.href='property_detail.html?item_index=4'" style="cursor:pointer;">
+        <h3>매물 5 : {{items[4].property_address}}</h3>
+        {% if items[4].rent == 0 %}
+        <p>매물정보: 전세 / 보증금 {{ items[4].deposit | money }}</p>
+        {% else %}
+        <p>매물정보: 월세 / {{items[4].rent | money}} / 보증금 {{ items[4].deposit | money }}</p>
+        {% endif %}
+      </div>
     </div>
 
     <!-- 우측: 지도 -->
@@ -200,6 +209,10 @@
       {
         title: items[3].property_address,
         latlng: new kakao.maps.LatLng(items[3].latitude, items[3].longitude)
+      },
+      {
+        title: items[4].property_address,
+        latlng: new kakao.maps.LatLng(items[4].latitude, items[4].longitude)
       }
     ];
 

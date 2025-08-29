@@ -9,6 +9,8 @@
       margin: 0;
       font-family: Arial, sans-serif;
       background-color: #f6f6f6;
+      /* body의 높이를 100vh로 설정하여 전체 화면을 차지하도록 변경 */
+      height: 100vh;
     }
     .header {
       display: flex;
@@ -27,6 +29,7 @@
     }
     .container {
       display: flex;
+      /* 헤더 높이를 뺀 나머지 높이로 설정 */
       height: calc(100vh - 80px);
     }
     .sidebar {
@@ -36,6 +39,8 @@
       display: flex;
       flex-direction: column;
       gap: 20px;
+      /* 사이드바에 스크롤 추가 */
+      overflow-y: auto;
     }
     .category-buttons {
       display: flex;
@@ -74,6 +79,8 @@
       padding: 30px;
       background-color: white;
       border-left: 1px solid #ccc;
+      /* details 영역에 스크롤 추가 */
+      overflow-y: auto;
     }
     .details h2 {
       font-size: 18px;
@@ -167,6 +174,19 @@
     .slider-btn.right {
       right: 10px;
     }
+
+    /* 사진 번호 스타일 추가 */
+    .image-counter {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        z-index: 10;
+    }
   </style>
 </head>
 <body>
@@ -221,6 +241,14 @@
         <p>매물정보: 월세 / {{items[3].rent | money}} / 보증금 {{ items[3].deposit | money }}</p>
         {% endif %}
       </div>
+      <div class="card"  onclick="location.href='property_detail.html?item_index=4'" style="cursor:pointer;">
+        <h3>매물 5 : {{items[4].property_address}}</h3>
+        {% if items[4].rent == 0 %}
+        <p>매물정보: 전세 / 보증금 {{ items[4].deposit | money }}</p>
+        {% else %}
+        <p>매물정보: 월세 / {{items[4].rent | money}} / 보증금 {{ items[4].deposit | money }}</p>
+        {% endif %}
+      </div>
     </div>
 
     <!-- 상세 정보 -->
@@ -242,6 +270,8 @@
         </div>
         <button class="slider-btn left">&#x25C0;</button>
         <button class="slider-btn right">&#x25B6;</button>
+        <!-- 사진 번호를 표시할 div 추가 -->
+        <div class="image-counter">1 / 1</div>
       </div>
       <div class="map" id="map"></div>
 
@@ -297,12 +327,15 @@
     const images = document.querySelectorAll('.image-slider .house-img');
     const leftBtn = document.querySelector('.slider-btn.left');
     const rightBtn = document.querySelector('.slider-btn.right');
+    const counter = document.querySelector('.image-counter'); // 카운터 요소 가져오기
 
     let currentIndex = 0;
     const totalImages = images.length;
 
     function updateSlider() {
       slider.style.transform = `translateX(${-currentIndex * 100}%)`;
+      // 사진 번호 업데이트
+      counter.textContent = `${currentIndex + 1} / ${totalImages}`;
     }
 
     leftBtn.addEventListener('click', () => {
@@ -323,3 +356,4 @@
     updateSlider();
   }
 </script>
+
