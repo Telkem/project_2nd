@@ -1,11 +1,12 @@
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 # models.py에서 DataManager 클래스를 임포트 (기존 코드 유지)
 from models import DataManager
-
+from pydantic import BaseModel
+import bcrypt
 
 # json 필터를 사용하기 위한 라이브러리 임포트
 from jinja2.ext import Extension
@@ -18,12 +19,27 @@ app = FastAPI()
 templates = Jinja2Templates(directory="C:\\githome\\project_2nd\\html\\project_2nd")
 data_manager = DataManager()
 
+# Pydantic 모델을 사용하여 유효성 검사
+class User(BaseModel):
+    username: str
+    password: str
+    nickname: str
+    birth: str
+    gender: str
+
+class LoginUser(BaseModel):
+    username: str
+    password: str
+
 # 정적 파일(이미지) 제공을 위한 설정
 # 'C:\githome\project_2nd\html\project_2nd\img' 디렉토리를 '/img' URL로 접근 가능하게 함
 app.mount("/img", StaticFiles(directory="C:\\githome\\project_2nd\\html\\project_2nd\\img"), name="img")
 app.mount("/room_img", StaticFiles(directory="C:\\githome\\project_2nd\\scraped_data\\img"), name="room_img")
 
 @app.get("/")
+def get_select_purpose_page(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+@app.get("/index.html")
 def get_select_purpose_page(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
@@ -57,6 +73,10 @@ def get_signup_page(request: Request):
 @app.get("/filter2.html")
 def get_signup_page(request: Request):
     return templates.TemplateResponse("filter2.html", {"request": request})
+
+@app.get("/agent_detail.html")
+def get_signup_page(request: Request):
+    return templates.TemplateResponse("agent_detail.html", {"request": request})
 
 @app.get("/search_result.html")
 def get_index(request: Request):
@@ -92,6 +112,48 @@ def get_index(request: Request, item_index: int = Query(None)):
             "imgs": filtered_imgs # 필터링된 이미지 리스트
         }
     )
+
+@app.post("/signup")
+async def signup(user: User):
+    """
+    회원가입 요청을 처리하는 엔드포인트
+    """
+    # 아이디 중복 확인
+    if data_manager.get_user_by_username(user.username):
+        return {"error": "이미 존재하는 아이디입니다."}
+    
+    # 비밀번호 해싱
+    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
+    
+    # 데이터베이스에 사용자 정보 추가
+    success = data_manager.add_user(
+        username=user.username,
+        password=hashed_password.decode('utf-8'),
+        nickname=user.nickname,
+        birth=user.birth,
+        gender=user.gender
+    )
+
+    if success:
+        return {"message": "회원가입 성공!"}
+    else:
+        return {"error": "회원가입 중 오류가 발생했습니다."}
+
+@app.post("/login")
+async def login(user: LoginUser):
+    """
+    로그인 요청을 처리하는 엔드포인트
+    """
+    db_user = data_manager.get_user_by_username(user.username)
+
+    if not db_user:
+        return {"error": "아이디가 존재하지 않습니다."}
+
+    if not bcrypt.checkpw(user.password.encode('utf-8'), db_user['password'].encode('utf-8')):
+        return {"error": "비밀번호가 일치하지 않습니다."}
+    
+    return {"message": "로그인 성공!"}
+
 
 class CustomJSONEncoder(json.JSONEncoder):
     def default(self, obj):
